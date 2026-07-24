@@ -1,0 +1,191 @@
+/* SolveIt to Social Media — CRAFT.css
+   Sections: 1.0 shell · 2.0 thread editor · 3.0 pickers · 3.2 media lightbox
+             3.5 code images · 4.0 toolbar
+             5.0 preview/publishing · 6.0 shared states/launcher
+   Keep section numbers stable so individual sections can be replaced safely. */
+
+/* ===== CSS 1.0 — Sidebar shell and card ===== */
+html:has(body > main > #dialog-attachment-panel:not([hidden])),
+html:has(body > main > #dialog-attachment-panel:not([hidden])) > body {
+  height: 100% !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+main:has(> #dialog-attachment-panel:not([hidden])) {
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+main:has(> #dialog-attachment-panel:not([hidden])) > #chat-box { min-height: 0 !important; }
+#dialog-attachment-panel, #dialog-attachment-panel * { box-sizing: border-box; }
+#dialog-attachment-panel {
+  flex: 0 0 28rem !important; width: 28rem !important; min-width: 28rem !important;
+  max-width: 28rem !important; align-self: stretch !important; min-height: 0 !important;
+  height: auto !important; max-height: none !important; padding: 1rem !important;
+  overflow-x: hidden !important; overflow-y: auto !important;
+  overflow-anchor: none; overscroll-behavior-y: contain;
+  border-left: 1px solid #e2e8f0; background: #f8fafc; color: #0f172a;
+}
+#dialog-attachment-panel[hidden], #dialog-attachment-panel [hidden] { display: none !important; }
+#dialog-attachment-panel button, #dialog-attachment-panel textarea { font: inherit; }
+#dialog-attachment-panel .social-title { margin: 0; font-size: 1.25rem; line-height: 1.75rem; font-weight: 600; letter-spacing: -.025em; }
+#dialog-attachment-panel .social-card { width: 100%; min-width: 0; max-width: 100%; margin-top: 1rem; padding: .75rem; border: 1px solid #e2e8f0; border-radius: .75rem; background: white; box-shadow: 0 1px 2px rgb(15 23 42 / .08); }
+#dialog-attachment-panel .social-card-head { display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: .5rem; padding-bottom: .3125rem; }
+#dialog-attachment-panel .social-card-title { flex: 0 0 auto; margin: 0; white-space: nowrap; font-size: 1.125rem; line-height: 1.75rem; font-weight: 600; }
+#dialog-attachment-panel .social-thread-meta { flex: 0 0 auto; white-space: nowrap; color: #64748b; font-size: .75rem; }
+#dialog-attachment-panel .social-card-actions { display: flex; min-width: 0; align-items: center; justify-content: flex-end; gap: .375rem; }
+#dialog-attachment-panel .social-view-toggle { display: inline-flex; min-width: 2rem; height: 1.5rem; align-items: center; justify-content: center; padding: .1875rem .5rem; border: 1px solid #cbd5e1; border-radius: 999px; background: white; color: #334155; font-size: .6875rem; line-height: 1rem; }
+#dialog-attachment-panel .social-view-toggle:hover { background: #f8fafc; }
+#dialog-attachment-panel .social-x-icon { display: block; width: auto; height: .78rem; flex: none; }
+/* ===== CSS 2.0 — Thread rows and post editor ===== */
+#dialog-attachment-panel .social-post { display: flex !important; align-items: flex-start; width: 100% !important; min-width: 0 !important; max-width: 100% !important; gap: .5rem; padding: .125rem 0; }
+#dialog-attachment-panel .social-post-body { display: flex !important; flex: 1 1 0% !important; min-width: 0 !important; max-width: 100% !important; flex-direction: column !important; gap: .375rem; }
+#dialog-attachment-panel .social-post-editor {
+  display: block !important; width: 100% !important; min-width: 0 !important; max-width: 100% !important;
+  min-height: 2rem !important; max-height: 12rem !important; margin: 0 !important; padding: .125rem 0 !important;
+  resize: none !important; overflow-x: hidden !important; overflow-y: auto !important;
+  border: 0 !important; background: transparent !important; box-shadow: none !important; outline: 0 !important;
+  color: #0f172a; font-size: .875rem !important; line-height: 1.25rem !important;
+  text-align: left !important; white-space: pre-wrap !important; overflow-wrap: anywhere !important;
+}
+#dialog-attachment-panel .social-post-editor[readonly] { cursor: pointer; color: #94a3b8 !important; opacity: .55; }
+#dialog-attachment-panel .social-post-toolbar { display: flex !important; min-width: 0; align-items: center; justify-content: space-between; border-top: 1px solid #e2e8f0; padding-top: .25rem; }
+#dialog-attachment-panel .social-avatar-wrap { position: relative; flex: 0 0 1.375rem; align-self: stretch; transform: translateY(.125rem); }
+#dialog-attachment-panel .social-avatar { position: relative; z-index: 1; display: block; width: 1.375rem; height: 1.375rem; }
+#dialog-attachment-panel .social-avatar svg { display: block; width: 100%; height: 100%; }
+#dialog-attachment-panel .social-thread-line { position: absolute; left: .6875rem; top: 1.375rem; bottom: -.25rem; border-left: 2px solid #e2e8f0; }
+#dialog-attachment-panel .social-post-media { display: flex !important; height: 1.5rem !important; align-items: center; gap: .25rem; overflow: hidden; white-space: nowrap; }
+#dialog-attachment-panel .social-post-thumb { position: relative; flex: 0 0 1.5rem !important; width: 1.5rem !important; height: 1.5rem !important; margin: 0 !important; padding: 0 !important; overflow: hidden; appearance: none; border: 1px solid #94a3b8; border-radius: .25rem; background: #f1f5f9; color: inherit; cursor: zoom-in; }
+#dialog-attachment-panel .social-post-thumb[draggable="true"] { cursor: grab; }
+#dialog-attachment-panel .social-post-thumb:focus-visible { outline: 2px solid #2563eb; outline-offset: -2px; }
+/* ===== CSS 3.0 — Media and emoji pickers ===== */
+#dialog-attachment-panel .social-media-picker { width: 100% !important; min-width: 0 !important; max-width: 100% !important; overflow: hidden !important; border: 1px solid #e2e8f0; border-radius: .5rem; background: white; }
+#dialog-attachment-panel .social-emoji-panel { width: 100% !important; min-width: 0 !important; max-width: 100% !important; overflow: hidden !important; border: 1px solid #e2e8f0; border-radius: .5rem; background: white; }
+#dialog-attachment-panel .social-emoji-head { display: flex; height: 2.25rem; align-items: center; justify-content: space-between; padding: 0 .5rem; border-bottom: 1px solid #e2e8f0; color: #475569; font-size: .75rem; font-weight: 600; }
+#dialog-attachment-panel .social-emoji-body { width: 100%; min-width: 0; height: 17rem; overflow: hidden; }
+#dialog-attachment-panel .social-emoji-body emoji-picker { display: block; width: 100% !important; max-width: 100% !important; height: 100% !important; --num-columns: 7; --emoji-size: 1.375rem; --category-emoji-size: 1rem; --border-radius: 0; --border-size: 0; }
+#dialog-attachment-panel .social-emoji-state { display: flex; height: 100%; align-items: center; justify-content: center; margin: 0; padding: 1rem; color: #64748b; text-align: center; font-size: .75rem; }
+#dialog-attachment-panel .social-emoji-retry { margin-left: .375rem; padding: .125rem .375rem; border: 1px solid #cbd5e1; border-radius: .25rem; background: white; color: #334155; }
+#dialog-attachment-panel .social-picker-head { display: flex !important; height: 2.25rem !important; align-items: center; justify-content: space-between; gap: .5rem; padding: 0 .5rem; border-bottom: 1px solid #e2e8f0; }
+#dialog-attachment-panel .social-tabs, #dialog-attachment-panel .social-picker-meta { display: flex; height: 100%; align-items: center; gap: .75rem; }
+#dialog-attachment-panel .social-picker-meta { height: auto; flex: 0 0 auto; gap: .5rem; color: #64748b; font-size: .75rem; }
+#dialog-attachment-panel .social-tab { height: 100%; padding: 0 .25rem; border: 0; border-bottom: 2px solid transparent; background: transparent; color: #64748b; font-size: .75rem; }
+#dialog-attachment-panel .social-tab[aria-pressed="true"] { border-bottom-color: #2563eb; color: #0f172a; font-weight: 600; }
+#dialog-attachment-panel .social-picker-body { position: relative; height: 15rem !important; padding: .5rem !important; overflow: hidden !important; }
+#dialog-attachment-panel .social-folder-bar { display: flex !important; height: 1.5rem !important; align-items: center; gap: .25rem; margin-bottom: .25rem; padding: 0 .375rem; border-radius: .375rem; background: #f8fafc; color: #64748b; font-size: .6875rem; }
+#dialog-attachment-panel .social-folder-path { min-width: 0; flex: 1 1 0%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#dialog-attachment-panel .social-media-grid {
+  display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  grid-auto-rows: 6rem !important; align-content: start; width: 100% !important; min-width: 0 !important;
+  height: 12.25rem !important; gap: .25rem !important; overflow-x: hidden !important; overflow-y: auto !important;
+}
+#dialog-attachment-panel .social-media-choice {
+  position: relative !important; display: block !important; width: 100% !important; min-width: 0 !important;
+  max-width: 100% !important; height: 6rem !important; margin: 0 !important; padding: 0 !important;
+  overflow: hidden !important; border: 1px solid #e2e8f0 !important; border-radius: .375rem !important;
+  background: #f1f5f9 !important; color: #64748b; text-align: left !important;
+}
+#dialog-attachment-panel .social-media-choice.is-folder { display: flex !important; flex-direction: column !important; padding: .25rem !important; background: white !important; }
+#dialog-attachment-panel .social-media-choice:hover { border-color: #cbd5e1 !important; background: #f8fafc !important; }
+#dialog-attachment-panel .social-media-choice[aria-pressed="true"]::after { content: ""; position: absolute; z-index: 2; inset: 0; pointer-events: none; border: 3px solid #2563eb; border-radius: inherit; }
+#dialog-attachment-panel .social-media-thumb { position: relative !important; display: block !important; width: 100% !important; height: 100% !important; min-height: 0 !important; overflow: hidden !important; }
+#dialog-attachment-panel .social-media-choice.is-folder .social-media-thumb { flex: 0 0 4rem !important; width: 4rem !important; height: 4rem !important; align-self: center; border-radius: .25rem; }
+#dialog-attachment-panel .social-cover { display: block !important; width: 100% !important; height: 100% !important; max-width: none !important; max-height: none !important; object-fit: cover !important; }
+#dialog-attachment-panel .social-overlay { position: absolute; inset: 0; display: flex; pointer-events: none; align-items: center; justify-content: center; }
+#dialog-attachment-panel .social-media-check { position: absolute; z-index: 3; right: .25rem; top: .25rem; display: flex; width: 1rem; height: 1rem; align-items: center; justify-content: center; border-radius: 999px; background: #2563eb; color: white; font-size: .625rem; }
+#dialog-attachment-panel .social-icon { display: block; width: 1rem; height: 1rem; }
+#dialog-attachment-panel .social-move-icon { display: block; width: .875rem; height: .875rem; }
+#dialog-attachment-panel .social-folder-icon { display: block; width: 1.25rem; height: 1.25rem; }
+#dialog-attachment-panel .social-folder-symbol { display: flex; width: 100%; min-height: 0; flex: 1 1 0%; align-items: center; justify-content: center; }
+#dialog-attachment-panel .social-file-name { display: block; width: 100%; min-width: 0; margin-top: .125rem; padding: 0 .125rem; overflow: hidden; color: #475569; text-overflow: ellipsis; white-space: nowrap; font-size: .625rem; line-height: .75rem; }
+#dialog-attachment-panel .social-folder-symbol + .social-file-name { text-align: center; }
+#dialog-attachment-panel .social-media-empty { position: absolute; inset: 2.25rem .5rem .5rem; display: flex; align-items: center; justify-content: center; padding: .75rem; border-radius: .375rem; background: white; color: #64748b; text-align: center; font-size: .75rem; }
+#dialog-attachment-panel .social-media-status { position: absolute; z-index: 2; right: .5rem; bottom: .5rem; left: .5rem; padding: .25rem .5rem; border-radius: .375rem; background: #fffbeb; color: #92400e; font-size: .625rem; line-height: .75rem; }
+/* ===== CSS 3.2 — Attached-media lightbox ===== */
+#dialog-attachment-panel .social-lightbox {
+  position: fixed; z-index: 2147483647; inset: 0;
+  width: min(72rem, 92vw); height: min(48rem, 88vh); height: min(48rem, 88dvh);
+  max-width: 92vw; max-height: 88vh; max-height: 88dvh; margin: auto; padding: 0;
+  overflow: hidden; overscroll-behavior: contain; border: 1px solid #334155; border-radius: .75rem;
+  background: #020617; color: white; box-shadow: 0 25px 50px rgb(2 6 23 / .45);
+}
+#dialog-attachment-panel .social-lightbox::backdrop { background: rgb(15 23 42 / .78); }
+#dialog-attachment-panel .social-lightbox-shell { position: relative; display: grid; width: 100%; height: 100%; min-width: 0; min-height: 0; grid-template-rows: minmax(0, 1fr); }
+#dialog-attachment-panel .social-lightbox-stage { display: grid; min-width: 0; min-height: 0; grid-template-columns: 2.5rem minmax(0, 1fr) 2.5rem; overflow: hidden; }
+#dialog-attachment-panel .social-lightbox-frame { display: flex; min-width: 0; min-height: 0; align-items: center; justify-content: center; overflow: hidden; padding: .5rem; }
+#dialog-attachment-panel .social-lightbox-media { display: block; width: 100%; height: 100%; min-width: 0; min-height: 0; max-width: 100%; max-height: 100%; object-fit: contain; }
+#dialog-attachment-panel :is(.social-lightbox-nav, .social-lightbox-close) { display: flex; align-items: center; justify-content: center; margin: 0; padding: 0; border: 0; background: transparent; color: white; }
+#dialog-attachment-panel :is(.social-lightbox-nav, .social-lightbox-close):hover { background: rgb(255 255 255 / .1); }
+#dialog-attachment-panel :is(.social-lightbox-nav, .social-lightbox-close):focus-visible { outline: 2px solid #60a5fa; outline-offset: -2px; }
+#dialog-attachment-panel .social-lightbox-nav:disabled { visibility: hidden; }
+#dialog-attachment-panel .social-lightbox-close { position: absolute; z-index: 2; right: .5rem; top: .5rem; width: 2rem; height: 2rem; border-radius: .375rem; background: rgb(2 6 23 / .82); box-shadow: 0 1px 3px rgb(0 0 0 / .35); font-size: 1.25rem; line-height: 1; }
+#dialog-attachment-panel .social-lightbox-arrow { display: block; width: 1.5rem; height: 1.5rem; }
+/* ===== CSS 3.5 — Code image composer ===== */
+#dialog-attachment-panel .social-code-panel { contain: inline-size; width: 100% !important; min-width: 0 !important; max-width: 100% !important; overflow: hidden !important; border: 1px solid #e2e8f0; border-radius: .5rem; background: white; }
+#dialog-attachment-panel .social-code-head { display: flex; height: 2.25rem; align-items: center; justify-content: space-between; padding: 0 .5rem; border-bottom: 1px solid #e2e8f0; }
+#dialog-attachment-panel .social-code-title { margin: 0; color: #334155; font-size: .75rem; font-weight: 600; }
+#dialog-attachment-panel .social-code-head-actions { display: flex; align-items: center; gap: .125rem; }
+#dialog-attachment-panel .social-code-body { display: flex; min-width: 0; flex-direction: column; gap: .5rem; padding: .5rem; }
+#dialog-attachment-panel .social-code-field { display: flex; min-width: 0; flex-direction: column; gap: .125rem; color: #475569; font-size: .6875rem; }
+#dialog-attachment-panel .social-code-source { display: grid; grid-template-columns: 3rem minmax(0, 1fr); align-items: center; gap: .375rem; }
+#dialog-attachment-panel .social-code-panel :is(input, select, textarea) { box-sizing: border-box; width: 100%; min-width: 0; max-width: 100%; font: inherit; }
+#dialog-attachment-panel .social-code-panel :is(input, select) { height: 1.75rem; padding: 0 .375rem; border: 1px solid #cbd5e1; border-radius: .375rem; background: white; color: #0f172a; }
+#dialog-attachment-panel .social-code-input { display: block; height: 6.5rem; padding: .5rem; resize: vertical; overflow: auto; border: 1px solid #cbd5e1; border-radius: .375rem; background: #f8fafc; color: #0f172a; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace !important; font-size: .6875rem !important; line-height: 1rem !important; tab-size: 2; white-space: pre; }
+#dialog-attachment-panel .social-code-preview { position: relative; width: 100%; max-width: 100%; aspect-ratio: 16 / 9; margin: 0; overflow: hidden; border: 1px solid #cbd5e1; border-radius: .5rem; background: #0f172a; }
+#dialog-attachment-panel .social-code-preview.is-overflow { border-color: #dc2626; }
+#dialog-attachment-panel .social-code-preview canvas { display: block; width: 100%; height: 100%; }
+#dialog-attachment-panel .social-code-settings { min-width: 0; border-top: 1px solid #e2e8f0; }
+#dialog-attachment-panel .social-code-settings summary { cursor: pointer; padding-top: .375rem; color: #475569; font-size: .6875rem; font-weight: 600; }
+#dialog-attachment-panel .social-code-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .375rem .5rem; padding-top: .375rem; }
+#dialog-attachment-panel .social-code-field.is-wide { grid-column: 1 / -1; }
+#dialog-attachment-panel .social-code-checks { display: grid; min-width: 0; align-content: end; gap: .125rem; }
+#dialog-attachment-panel .social-code-check { display: flex; min-width: 0; align-items: center; gap: .375rem; height: 1.75rem; color: #475569; font-size: .6875rem; }
+#dialog-attachment-panel .social-code-checks .social-code-check { height: 1.25rem; }
+#dialog-attachment-panel .social-code-check input { width: .875rem; height: .875rem; accent-color: #2563eb; }
+#dialog-attachment-panel .social-code-footer { display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: .5rem; }
+#dialog-attachment-panel .social-code-status { min-width: 0; min-height: 1rem; margin: 0; color: #64748b; font-size: .625rem; line-height: 1rem; }
+#dialog-attachment-panel .social-code-status.is-error { color: #b91c1c; }
+#dialog-attachment-panel .social-code-add { flex: 0 0 auto; padding: .25rem .625rem; border: 1px solid #2563eb; border-radius: 999px; background: #2563eb; color: white; font-size: .6875rem; font-weight: 600; }
+#dialog-attachment-panel .social-code-add:disabled { cursor: default; opacity: .4; }
+/* ===== CSS 4.0 — Post toolbar and menus ===== */
+#dialog-attachment-panel .social-tools { display: flex; flex: 0 0 auto; align-items: center; gap: .25rem; }
+#dialog-attachment-panel .social-tool { display: flex !important; flex: 0 0 1.5rem !important; width: 1.5rem !important; min-width: 1.5rem !important; height: 1.5rem !important; align-items: center; justify-content: center; margin: 0; padding: 0; border: 0; border-radius: .25rem; background: transparent; color: inherit; }
+#dialog-attachment-panel .social-tool:hover { background: #f1f5f9; }
+#dialog-attachment-panel .social-tool:disabled { opacity: .3; }
+#dialog-attachment-panel .social-add { flex-basis: 1.25rem !important; width: 1.25rem !important; min-width: 1.25rem !important; height: 1.25rem !important; border: 1px solid #cbd5e1; border-radius: 999px; }
+#dialog-attachment-panel .social-add-icon { display: block; width: .75rem; height: .75rem; }
+#dialog-attachment-panel .social-media-button { position: relative !important; color: #64748b; }
+#dialog-attachment-panel .social-media-button.has-media { color: #2563eb; }
+#dialog-attachment-panel .social-badge { position: absolute; right: -1px; top: 0; display: flex; width: .7rem; height: .7rem; align-items: center; justify-content: center; border-radius: 999px; background: #2563eb; color: white; font-size: .5625rem; }
+#dialog-attachment-panel .social-menu { position: relative; }
+#dialog-attachment-panel .social-menu summary { cursor: pointer; list-style: none; padding: .125rem .375rem; border-radius: .25rem; }
+#dialog-attachment-panel .social-menu-pop { position: absolute; z-index: 30; right: 0; top: 100%; width: 10rem; margin-top: .25rem; padding: .25rem; border: 1px solid #e2e8f0; border-radius: .5rem; background: white; box-shadow: 0 10px 15px rgb(15 23 42 / .12); white-space: nowrap; }
+#dialog-attachment-panel .social-menu-pop button { width: 100%; padding: .25rem .5rem; border: 0; border-radius: .25rem; background: transparent; color: #b91c1c; text-align: left; font-size: .75rem; white-space: nowrap; }
+#dialog-attachment-panel .social-count { color: #64748b; font-size: .75rem; font-variant-numeric: tabular-nums; }
+#dialog-attachment-panel .social-count.is-over { color: #dc2626; }
+/* ===== CSS 5.0 — Preview and publishing ===== */
+#dialog-attachment-panel .social-preview-list { width: 100%; margin: 0; padding: 0; list-style: none; }
+#dialog-attachment-panel .social-preview-post { padding: .25rem 0; }
+#dialog-attachment-panel .social-preview-text { min-height: 1.25rem; margin: 0; color: #0f172a; font-size: .875rem; line-height: 1.25rem; overflow-wrap: anywhere; white-space: pre-wrap; }
+#dialog-attachment-panel .social-preview-media { display: grid; width: 100%; margin-top: .375rem; aspect-ratio: 16 / 9; gap: 2px; overflow: hidden; border: 1px solid #cbd5e1; border-radius: .625rem; background: #e2e8f0; }
+#dialog-attachment-panel .social-preview-media[data-count="2"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+#dialog-attachment-panel .social-preview-media[data-count="3"], #dialog-attachment-panel .social-preview-media[data-count="4"] { grid-template: repeat(2, minmax(0, 1fr)) / repeat(2, minmax(0, 1fr)); }
+#dialog-attachment-panel .social-preview-media[data-count="3"] > :first-child { grid-row: 1 / span 2; }
+#dialog-attachment-panel .social-preview-item { position: relative; display: block; width: 100%; height: 100%; min-width: 0; min-height: 0; margin: 0; padding: 0; overflow: hidden; appearance: none; border: 0; background: #f1f5f9; cursor: zoom-in; }
+#dialog-attachment-panel .social-preview-item:focus-visible { z-index: 1; outline: 2px solid #2563eb; outline-offset: -2px; }
+#dialog-attachment-panel .social-preview-issue, #dialog-attachment-panel .social-preview-summary { margin: .25rem 0 0; color: #b45309; font-size: .6875rem; line-height: 1rem; }
+#dialog-attachment-panel .social-preview-summary { margin: 0 0 .375rem 1.875rem; padding: .375rem .5rem; border-radius: .375rem; background: #fffbeb; }
+#dialog-attachment-panel .social-publish { display: flex; align-items: center; gap: .5rem; margin: .5rem 0 0 1.875rem; padding-top: .5rem; border-top: 1px solid #e2e8f0; }
+#dialog-attachment-panel .social-publish-button { display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center; gap: .3rem; padding: .25rem .625rem; border: 1px solid #0f172a; border-radius: 999px; background: #0f172a; color: white; font-size: .75rem; font-weight: 600; }
+#dialog-attachment-panel .social-publish-button:hover:not(:disabled) { background: #334155; }
+#dialog-attachment-panel .social-publish-button:disabled { cursor: default; opacity: .4; }
+#dialog-attachment-panel .social-publish-status { min-width: 0; margin: 0; color: #64748b; font-size: .6875rem; line-height: 1rem; }
+#dialog-attachment-panel .social-publish-status.is-error { color: #b91c1c; }
+#dialog-attachment-panel .social-publish-link { color: #2563eb; white-space: nowrap; }
+#dialog-attachment-panel .social-missing-media { display: flex; width: 100%; height: 100%; align-items: center; justify-content: center; color: #b45309; font-size: .75rem; }
+/* ===== CSS 6.0 — Shared states and launcher ===== */
+#dialog-attachment-panel .social-sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+#dialog-attachment-panel .social-dim, #dialog-attachment-panel .social-dragging { opacity: .5; }
+#dialog-attachment-panel .social-empty { font-style: italic; }
+#dialog-attachment-panel .social-invisible { visibility: hidden !important; }
+#dialog-attachment-panel .social-spin { animation: social-spin 1s linear infinite; }
+@keyframes social-spin { to { transform: rotate(360deg); } }
