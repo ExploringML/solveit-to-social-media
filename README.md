@@ -1,6 +1,6 @@
 # SolveIt to Social Media
 
-A SolveIt project for drafting and publishing social media posts `directly` from a dialog! X/Twitter is
+A SolveIt project for drafting and publishing social media posts *directly* from a dialog! X/Twitter is
 currently supported; LinkedIn support is planned (coming soon).
 
 ## Setup
