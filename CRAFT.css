@@ -4,6 +4,8 @@
              5.0 preview/publishing · 6.0 shared states/launcher
    Keep section numbers stable so individual sections can be replaced safely. */
 
+:root { --solveit-social-css-version: "1"; }
+
 /* ===== CSS 1.0 — Sidebar shell and card ===== */
 html:has(body > main > #dialog-attachment-panel:not([hidden])),
 html:has(body > main > #dialog-attachment-panel:not([hidden])) > body {
