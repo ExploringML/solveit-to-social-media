@@ -39,26 +39,6 @@ The setup checker (details below) reports missing secret names but never display
 
 Create a new SolveIt dialog in the current folder or sub-folder and click the 'megaphone` icon in the toolbar to display the solveIt to social media sidebar UI.
 
-### 4. Check the setup
-
-After the notebook and CRAFT assets have loaded, run these utilities in order in the dialog just created:
-
-```python
-social_installation_help("x")
-check_social_setup("x")
-check_social_setup("x", probe=True)
-social_usage_help()
-```
-
-| Call | What it does |
-|---|---|
-| `social_installation_help("x")` | Displays the current X installation requirements. It changes nothing. |
-| `check_social_setup("x")` | Checks the local Python runtime, routes, packages, public URL, capability token, and presence of the required secret names. It does not contact X. |
-| `check_social_setup("x", probe=True)` | Repeats the setup checks and makes one read-only request to verify the connected X account. It does not upload media or publish. |
-| `social_usage_help()` | Displays the compact end-user workflow for composing, previewing, and publishing. |
-
-The checks are manual and never run automatically.
-
 ## Usage
 
 1. Click the 'megaphone' button in the SolveIt toolbar.
