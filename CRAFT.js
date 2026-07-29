@@ -8,7 +8,7 @@
 (() => {
   /* ===== JS 1.0 — Module constants, icons, and lifecycle ===== */
   const PANEL = 'dialog-attachment-panel', BUTTON = 'dialog-attachment-panel-btn';
-  const LIMIT = 280;
+  const LIMIT = 280, LINKEDIN_LIMIT = 3000;
   const EMOJI_MODULE = 'https://esm.sh/emoji-picker-element@1.29.1?bundle&target=es2020';
   const EMOJI_DATA = 'https://cdn.jsdelivr.net/npm/emoji-picker-element-data@1.8.0/en/emojibase/data.json';
   const AVATAR = '<svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="16" fill="#e2e8f0"/><circle cx="16" cy="12" r="5" fill="#94a3b8"/><path d="M7 28c1-7 5-10 9-10s8 3 9 10" fill="#94a3b8"/></svg>';
@@ -19,6 +19,7 @@
   const MOVE_DOWN_ICON = '<svg viewBox="0 0 20 20" class="social-move-icon" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 4v12m-4.5-4.5L10 16l4.5-4.5"/></svg>';
   const ADD_ICON = '<svg viewBox="0 0 16 16" class="social-add-icon" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M8 4v8M4 8h8"/></svg>';
   const X_ICON = '<svg class="social-x-icon" viewBox="0 0 1200 1227" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><path fill="currentColor" d="M714.163 519.284L1160.89 0H1055.03L667.137 450.887L357.328 0H0L468.492 681.821L0 1226.37H105.866L515.491 750.218L842.672 1226.37H1200L714.137 519.284H714.163ZM569.165 687.828L521.697 619.934L144.011 79.6944H306.615L611.412 515.685L658.88 583.579L1055.08 1150.3H892.476L569.165 687.854V687.828Z"/></svg>';
+  const LINKEDIN_ICON = '<svg class="social-linkedin-icon" width="16" height="16" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><rect width="24" height="24" rx="2.5" fill="#0A66C2"/><path fill="#fff" d="M20.45 20.45h-3.56v-5.57c0-1.33-.03-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.34V8.98h3.42v1.57h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.29ZM5.32 7.41a2.06 2.06 0 1 1 0-4.12 2.06 2.06 0 0 1 0 4.12Zm1.78 13.04H3.54V8.98H7.1v11.47Z"/></svg>';
   const PLAY_ICON = '<svg viewBox="0 0 24 24" class="social-icon" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="#0f172a" fill-opacity=".72" stroke="white"/><path d="m10 8.5 5.5 3.5-5.5 3.5Z" fill="white"/></svg>';
   const FOLDER_ICON = '<svg viewBox="0 0 24 24" class="social-folder-icon" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M3.5 7.5h6l2-2h9v13h-17Z"/><path d="M3.5 9.5h17"/></svg>';
 
@@ -26,6 +27,8 @@
   const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
   const DIALOG_NAME = new URLSearchParams(location.search).get('name') || $('#dlg_name')?.value || location.pathname;
   const STORAGE_KEY = `solveit-social:v1:${DIALOG_NAME}`;
+  const LINKEDIN_STORAGE_KEY = `solveit-social:linkedin:v1:${DIALOG_NAME}`;
+  const PLATFORM_STORAGE_KEY = `solveit-social:platform:v1:${DIALOG_NAME}`;
   const CODE_SETTINGS_KEY = 'solveit-social:code-settings:v1';
   const uid = () => crypto.randomUUID?.() || `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
   const newPost = () => ({ clientId: uid(), text: '', media: [] });
@@ -41,6 +44,7 @@
   window.__solveitSocialAbort = lifecycle;
   document.getElementById(PANEL)?.remove();
   document.getElementById(BUTTON)?.remove();
+  document.getElementById('linkedin-post-panel-btn')?.remove();
 
   /* ===== JS 2.0 — Dialog media discovery and runtime state ===== */
   function collectDialogMedia() {
@@ -85,21 +89,67 @@
     return media;
   }
 
-  let panel, ui, areaSizer, posts = [newPost()], activePost = 0, viewMode = 'edit';
+  let platform = (() => {
+    try { return localStorage.getItem(PLATFORM_STORAGE_KEY) === 'linkedin' ? 'linkedin' : 'x'; }
+    catch (_) { return 'x'; }
+  })(), panel, ui, areaSizer, posts = [newPost()], activePost = 0, viewMode = 'edit';
   let mediaOpen = false, mediaTab = 'dialog', mediaStatus = '', emojiOpen = false, codeOpen = false;
   let lightboxState = null, suppressMediaClickUntil = 0;
   let folderPath = '', folderParent = null, folderMedia = [], folderLoading = false, folderRequest = 0;
   let emojiPickerCtor = customElements.get('emoji-picker'), emojiPickerPromise, emojiLoading = false, emojiError = '', emojiSelection = [0, 0];
   let parseTweet = typeof window.SOLVEIT_TWITTER_TEXT === 'function' ? window.SOLVEIT_TWITTER_TEXT : window.SOLVEIT_TWITTER_TEXT?.parseTweet;
-  let hydrated = false, saveTimer, storageStatus = '';
+  let hydrated = false, saveTimer, storageStatus = '', storageListeners = false;
   let publishState = { status: 'idle' }, publishing = false;
+  const platformState = new Map();
   let counterStatus = parseTweet ? '' : 'X character counts are approximate while the official counter loads.';
   let codeDraft = { code: '', title: '', language: 'python', theme: 'dark', fontSize: 'auto', columns: 'auto', imageSize: '1200x675',
     lineNumbers: true, wrapLines: false, snippets: [], sourceIndex: -1, sourceKey: '', sourceBacked: false,
     selectionKeys: [], fit: null };
   const closeTools = () => { mediaOpen = emojiOpen = codeOpen = false; };
 
-  /* ===== JS 3.0 — Thread model, validation, and draft persistence ===== */
+  const isLinkedIn = () => platform === 'linkedin';
+  const currentLimit = () => isLinkedIn() ? LINKEDIN_LIMIT : LIMIT;
+  const currentStorageKey = () => isLinkedIn() ? LINKEDIN_STORAGE_KEY : STORAGE_KEY;
+  const platformSnapshot = () => ({ posts, activePost, viewMode, publishState, hydrated, storageStatus });
+  function applyPlatform(next, state = {}) {
+    platform = next;
+    posts = state.posts || [newPost()];
+    activePost = state.activePost || 0;
+    viewMode = state.viewMode || 'edit';
+    publishState = state.publishState || { status: 'idle' };
+    hydrated = state.hydrated || false;
+    storageStatus = state.storageStatus || '';
+  }
+  function stashPlatform() {
+    platformState.set(platform, platformSnapshot());
+  }
+  function loadPlatform(next) {
+    applyPlatform(next, platformState.get(next));
+  }
+  function ensureHydrated() {
+    if (!hydrated) { restoreDraft(); hydrated = true; }
+  }
+  function withPlatform(next, action) {
+    if (platform === next) { ensureHydrated(); return action(); }
+    const previous = platform, previousState = platformSnapshot();
+    platformState.set(previous, previousState);
+    loadPlatform(next);
+    ensureHydrated();
+    try { return action(); }
+    finally {
+      platformState.set(next, platformSnapshot());
+      applyPlatform(previous, previousState);
+    }
+  }
+  function savePlatformDraft(next) {
+    if (platform === next) { ensureHydrated(); return writeDraft(); }
+    const pending = saveTimer;
+    saveTimer = undefined;
+    try { return withPlatform(next, writeDraft); }
+    finally { saveTimer = pending; }
+  }
+
+  /* ===== JS 3.0 — Post models, validation, and draft persistence ===== */
   function countText(text) {
     const normalized = String(text ?? '').normalize('NFC');
     try {
@@ -119,6 +169,11 @@
     } catch (_) {}
     return { weightedLength: [...normalized].length, valid: true, approximate: true };
   }
+
+  function countLinkedInText(text) {
+    return { weightedLength: [...String(text ?? '').normalize('NFC')].length, valid: true, approximate: false };
+  }
+  const countCurrentText = text => isLinkedIn() ? countLinkedInText(text) : countText(text);
 
   function serializeMedia(item, persist = false) {
     const value = {
@@ -140,6 +195,17 @@
         media: post.media.map(item => serializeMedia(item, persist)) }))
     };
   }
+
+  function serializeLinkedInPost({ persist = false } = {}) {
+    const post = posts[0] || newPost();
+    return {
+      schemaVersion: 1, platform: 'linkedin', postType: 'single',
+      charLimit: LINKEDIN_LIMIT, characterCounting: 'unicode-code-points', dialogName: DIALOG_NAME,
+      posts: [{ clientId: post.clientId, text: post.text,
+        media: post.media.map(item => serializeMedia(item, persist)) }]
+    };
+  }
+  const serializeCurrent = options => isLinkedIn() ? serializeLinkedInPost(options) : serializeThread(options);
 
   function validateThread(payload = serializeThread()) {
     const errors = [], warnings = [], results = payload.posts.map((post, postIndex) => {
@@ -166,6 +232,40 @@
     return { valid: !errors.length, posts: results, errors, warnings };
   }
 
+  function validateLinkedInPost(payload = serializeLinkedInPost()) {
+    const errors = [], warnings = [], post = payload.posts?.[0] || { text: '', media: [] };
+    const metrics = countLinkedInText(post.text), media = post.media || [];
+    const add = (list, code, message, mediaIndex) =>
+      list.push({ code, postIndex: 0, ...(mediaIndex === undefined ? {} : { mediaIndex }), message });
+    if (!Array.isArray(payload.posts) || payload.posts.length !== 1)
+      add(errors, 'SINGLE_POST_REQUIRED', 'LinkedIn publishing requires exactly one post.');
+    if (!(post.text || '').trim() && !media.length) add(errors, 'EMPTY_POST', 'Post is empty.');
+    if (metrics.weightedLength > LINKEDIN_LIMIT)
+      add(errors, 'POST_TOO_LONG', `Post is ${metrics.weightedLength - LINKEDIN_LIMIT} characters over.`);
+    if (media.length > 4) add(errors, 'TOO_MANY_MEDIA', 'This composer supports up to four images or one video for LinkedIn.');
+    const videos = media.filter(item => item.kind === 'video');
+    if (videos.length > 1 || videos.length && media.length > 1)
+      add(errors, 'MIXED_MEDIA', 'LinkedIn posts can contain images or one video, not a mixture.');
+    const refs = new Set();
+    media.forEach((item, mediaIndex) => {
+      if (!['image', 'gif', 'video'].includes(item.kind) || linkedInMediaFormatIssue(item))
+        add(errors, 'UNSUPPORTED_MEDIA', 'LinkedIn supports images, GIFs, or one MP4 video.', mediaIndex);
+      if (!item.ref || item.missing) add(errors, 'MISSING_MEDIA', 'The post has media that is no longer available.', mediaIndex);
+      else if (refs.has(item.ref)) add(errors, 'DUPLICATE_MEDIA', 'The post contains the same media twice.', mediaIndex);
+      else refs.add(item.ref);
+      if ([...String(item.altText || '')].length > 4086)
+        add(errors, 'ALT_TEXT_TOO_LONG', 'LinkedIn image alt text must be 4,086 characters or fewer.', mediaIndex);
+    });
+    const temporary = media.filter(item => item.temporary).length;
+    if (temporary) add(warnings, 'TEMPORARY_MEDIA',
+      `The post contains ${temporary} temporary media item${temporary === 1 ? '' : 's'} that may not survive a reload.`);
+    if (storageStatus) warnings.push({ code: 'DRAFT_STORAGE', message: storageStatus });
+    return { valid: !errors.length,
+      posts: [{ weightedLength: metrics.weightedLength, remaining: LINKEDIN_LIMIT - metrics.weightedLength, approximate: false }],
+      errors, warnings };
+  }
+  const validateCurrent = payload => isLinkedIn() ? validateLinkedInPost(payload) : validateThread(payload);
+
   function resolveSavedMedia(saved, catalogue) {
     if (saved.generator?.type === 'code-image') return makeCodeMedia(saved.generator, saved.ref);
     const current = catalogue.get(saved.ref);
@@ -177,12 +277,13 @@
 
   function restoreDraft() {
     try {
-      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
-      if (!saved || saved.schemaVersion !== 1 || saved.dialogName !== DIALOG_NAME || !Array.isArray(saved.posts)) return;
+      const saved = JSON.parse(localStorage.getItem(currentStorageKey()) || 'null');
+      if (!saved || saved.schemaVersion !== 1 || saved.platform !== platform ||
+          saved.dialogName !== DIALOG_NAME || !Array.isArray(saved.posts)) return;
       const catalogue = new Map(collectDialogMedia().map(item => [item.ref, item]));
       const restored = saved.posts.map(post => ({ clientId: post.clientId || uid(), text: String(post.text || ''),
         media: Array.isArray(post.media) ? post.media.map(item => resolveSavedMedia(item, catalogue)) : [] }));
-      if (restored.length) posts = restored;
+      if (restored.length) posts = isLinkedIn() ? [restored[0]] : restored;
       activePost = Math.max(0, Math.min(Number(saved.ui?.activePost) || 0, posts.length - 1));
     } catch (_) {
       storageStatus = 'The saved draft could not be restored.';
@@ -193,7 +294,7 @@
     if (!hydrated) return;
     clearTimeout(saveTimer);
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...serializeThread({ persist: true }), savedAt: Date.now(), ui: { activePost } }));
+      localStorage.setItem(currentStorageKey(), JSON.stringify({ ...serializeCurrent({ persist: true }), savedAt: Date.now(), ui: { activePost } }));
       if (storageStatus.startsWith('Draft changes')) storageStatus = '';
     } catch (_) {
       storageStatus = 'Draft changes could not be saved in this browser.';
@@ -207,7 +308,7 @@
     $$('[data-post]', ui.posts).forEach((row, index) => {
       if (index === activePost) updatePost(row, posts[index].text);
       else {
-        const over = countText(posts[index].text).weightedLength - LIMIT;
+        const over = countCurrentText(posts[index].text).weightedLength - currentLimit();
         $('[data-activate-post]', row).ariaLabel = `Edit post ${index + 1}${over > 0 ? `, ${over} characters over limit` : ''}`;
       }
     });
@@ -402,13 +503,29 @@
     status.hidden = !status.textContent;
   }
 
+  function linkedInMediaFormatIssue(item) {
+    const hint = `${item.name || ''} ${item.path || ''} ${item.src || ''}`.toLowerCase();
+    return item.kind === 'video' && (/\.(?:mov|m4v|webm)(?:[?#\s]|$)/.test(hint) || hint.includes('data:video/webm')) ||
+      item.kind === 'image' && (/(?:\.webp(?:[?#\s]|$)|data:image\/webp)/.test(hint));
+  }
+
+  function mediaAddIssue(media, item) {
+    if (!isLinkedIn()) return media.length >= 4 ? 'A post can contain up to four media items.' : '';
+    if (linkedInMediaFormatIssue(item)) return 'LinkedIn supports JPEG, PNG, GIF, or MP4 media.';
+    if (media.length >= 4) return 'This composer supports up to four images or one video for LinkedIn.';
+    const video = item.kind === 'video', hasVideo = media.some(value => value.kind === 'video');
+    if (video && media.length || !video && hasVideo)
+      return 'LinkedIn posts can contain images or one video, not a mixture.';
+    return '';
+  }
+
   function toggleMedia(item) {
     const media = posts[activePost].media, scroll = $('[data-media-grid]', ui.posts)?.scrollTop || 0;
     const index = media.findIndex(value => value.id === item.id);
     let changed = false;
     mediaStatus = '';
     if (index >= 0) { media.splice(index, 1); changed = true; }
-    else if (media.length >= 4) mediaStatus = 'A post can contain up to four media items.';
+    else if ((mediaStatus = mediaAddIssue(media, item))) {}
     else { media.push({ ...item, altText: item.altText || '' }); changed = true; }
     if (!changed) return renderMediaPicker();
     queueSave();
@@ -950,19 +1067,20 @@
   function drawCodePreview() {
     const host = $('[data-code-panel]', ui.posts), canvas = $('canvas', host);
     if (!host || !canvas) return;
-    const fit = drawCodeImage(canvas, codeRecipe()), mediaFull = posts[activePost].media.length >= 4;
+    const fit = drawCodeImage(canvas, codeRecipe()), mediaIssue = mediaAddIssue(posts[activePost].media, { kind: 'image' });
     codeDraft.fit = fit;
-    const empty = !codeDraft.code.trim(), message = mediaFull ? 'Remove a media item before adding another.' :
-      empty ? 'Paste code or choose a selected snippet.' : fit.message;
+    const fullMessage = !isLinkedIn() && mediaIssue ? 'Remove a media item before adding another.' : mediaIssue;
+    const empty = !codeDraft.code.trim(), message = fullMessage ||
+      (empty ? 'Paste code or choose a selected snippet.' : fit.message);
     const status = $('[data-code-status]', host), add = $('[data-add-code-image]', host), preview = $('[data-code-preview]', host);
-    status.textContent = message; status.classList.toggle('is-error', mediaFull || !empty && !fit.ok);
+    status.textContent = message; status.classList.toggle('is-error', !!mediaIssue || !empty && !fit.ok);
     preview.classList.toggle('is-overflow', !empty && !fit.ok);
-    add.disabled = mediaFull || empty || !fit.ok;
+    add.disabled = !!mediaIssue || empty || !fit.ok;
   }
 
   function attachCodeImage() {
     const post = posts[activePost];
-    if (!post || post.media.length >= 4 || !codeDraft.code.trim()) return drawCodePreview();
+    if (!post || mediaAddIssue(post.media, { kind: 'image' }) || !codeDraft.code.trim()) return drawCodePreview();
     const media = makeCodeMedia(codeRecipe());
     if (media.missing) return drawCodePreview();
     post.media.push(media);
@@ -985,7 +1103,7 @@
   }
 
   function updatePost(card, text) {
-    const remaining = LIMIT - countText(text).weightedLength, over = remaining < 0;
+    const remaining = currentLimit() - countCurrentText(text).weightedLength, over = remaining < 0;
     const counter = $('[data-post-count]', card);
     counter.textContent = over ? `${-remaining} over` : remaining;
     counter.title = over ? `${-remaining} characters over limit` : `${remaining} characters remaining`;
@@ -994,6 +1112,7 @@
   }
 
   function addPost(index) {
+    if (isLinkedIn()) return;
     posts.splice(index + 1, 0, newPost());
     activePost = index + 1;
     closeTools();
@@ -1003,16 +1122,30 @@
 
   function syncHeader() {
     const preview = viewMode === 'preview';
+    ui.platformToggle.setAttribute('aria-busy', String(publishing));
+    ui.platformToggle.disabled = publishing;
+    ui.platformToggle.setAttribute('aria-disabled', String(publishing));
+    ui.viewToggle.classList.toggle('is-edit', preview);
+    if (isLinkedIn()) {
+      ui.threadMeta.textContent = '1 post';
+      ui.viewToggle.innerHTML = preview ? 'Edit' : LINKEDIN_ICON;
+      ui.viewToggle.setAttribute('aria-label', preview ? 'Edit post' : 'Preview and post to LinkedIn');
+      ui.viewToggle.setAttribute('uk-tooltip', preview ? 'Edit post' : 'Preview and post');
+      ui.viewToggle.setAttribute('aria-pressed', String(preview));
+      ui.viewToggle.disabled = publishing;
+      ui.clearThread.disabled = publishing;
+      return;
+    }
     ui.threadMeta.textContent = `${posts.length} post${posts.length === 1 ? '' : 's'}`;
     ui.viewToggle.innerHTML = preview ? 'Edit' : X_ICON;
     ui.viewToggle.setAttribute('aria-label', preview ? 'Edit thread' : 'Preview and post to X');
-    ui.viewToggle.setAttribute('uk-tooltip', preview ? 'Edit thread' : 'Preview & Post to X');
+    ui.viewToggle.setAttribute('uk-tooltip', preview ? 'Edit thread' : 'Preview and post');
     ui.viewToggle.setAttribute('aria-pressed', String(preview));
     ui.viewToggle.disabled = publishing;
     ui.clearThread.disabled = publishing;
   }
 
-  /* ===== JS 7.0 — Preview and X publishing ===== */
+  /* ===== JS 7.0 — Preview and provider publishing ===== */
   function renderPreviewMedia(host, post) {
     const media = post.media;
     if (!media.length) return;
@@ -1074,6 +1207,117 @@
     return host;
   }
 
+  function linkedInBlockReason(validation) {
+    if (!window.SOLVEIT_LINKEDIN_PUBLISH_URL || !window.SOLVEIT_LINKEDIN_PUBLISH_TOKEN) return 'Live endpoint unavailable.';
+    if (!validation.valid) return 'Fix the preview issues first.';
+    if (posts[0]?.media.some(item => !item.src)) return 'The post contains media that is no longer available.';
+    return '';
+  }
+
+  function renderLinkedInPublish(validation) {
+    const host = document.createElement('div'), button = document.createElement('button'), status = document.createElement('p');
+    const blocked = linkedInBlockReason(validation);
+    host.className = 'social-publish'; button.type = 'button'; button.className = 'social-publish-button';
+    button.dataset.publish = '';
+    if (publishing) button.textContent = 'Posting…';
+    else if (publishState.status === 'success')
+      button.textContent = publishState.data?.complete === false ? 'Submitted' : 'Posted';
+    else button.innerHTML = `<span>Post to</span>${LINKEDIN_ICON}`;
+    button.setAttribute('aria-label', 'Post to LinkedIn');
+    button.setAttribute('uk-tooltip', 'Post to LinkedIn');
+    button.disabled = publishing || publishState.locked || !!blocked;
+    button.setAttribute('aria-busy', String(publishing)); button.onclick = runLinkedInPublish;
+    status.className = `social-publish-status${publishState.status === 'error' ? ' is-error' : ''}`;
+    status.setAttribute('role', publishState.status === 'error' ? 'alert' : 'status');
+    if (publishState.status === 'success' && publishState.data?.posts?.[0]?.url) {
+      status.textContent = publishState.data.complete === false ?
+        'Accepted by LinkedIn; media processing was not verified · ' : 'Published · ';
+      const link = document.createElement('a'); link.className = 'social-publish-link';
+      link.href = publishState.data.posts[0].url; link.target = '_blank'; link.rel = 'noopener';
+      link.textContent = 'View on LinkedIn'; status.append(link);
+    } else {
+      status.textContent = publishState.message || blocked || '';
+      if (publishState.data?.posts?.[0]?.url) {
+        status.append(' ');
+        const link = document.createElement('a'); link.className = 'social-publish-link';
+        link.href = publishState.data.posts[0].url; link.target = '_blank'; link.rel = 'noopener';
+        link.textContent = 'View on LinkedIn'; status.append(link);
+      }
+    }
+    host.append(button); if (status.textContent) host.append(status);
+    return host;
+  }
+
+  async function linkedInBlobKind(blob) {
+    const bytes = new Uint8Array(await blob.slice(0, 16).arrayBuffer());
+    if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return 'image';
+    if ([137, 80, 78, 71, 13, 10, 26, 10].every((value, index) => bytes[index] === value)) return 'image';
+    if (String.fromCharCode(...bytes.slice(0, 6)).match(/^GIF8[79]a$/)) return 'gif';
+    const brand = String.fromCharCode(...bytes.slice(8, 12));
+    if (String.fromCharCode(...bytes.slice(4, 8)) === 'ftyp' &&
+        brand !== 'qt  ' && !brand.startsWith('M4V')) return 'video';
+    return '';
+  }
+
+  async function publishBody(payload, token, caps) {
+    const post = posts[0], totalMedia = post.media.length;
+    payload.publishToken = token;
+    if (!totalMedia) return { body: JSON.stringify(payload), totalMedia };
+    const body = new FormData(); body.append('payload', JSON.stringify(payload));
+    for (let mediaIndex = 0; mediaIndex < post.media.length; mediaIndex++) {
+      const item = post.media[mediaIndex];
+      let source;
+      try { source = await fetch(item.src); } catch (_) {}
+      if (!source?.ok) throw new Error(`Media ${mediaIndex + 1} could not be read.`);
+      const blob = await source.blob(), limit = caps[item.kind] * 1024 * 1024;
+      if (!blob.size) throw new Error(`Media ${mediaIndex + 1} is empty.`);
+      if (await linkedInBlobKind(blob) !== item.kind)
+        throw new Error(`Media ${mediaIndex + 1} must be a JPEG, PNG, GIF, or MP4 file.`);
+      if (item.kind === 'video' && blob.size < 75 * 1024)
+        throw new Error(`Media ${mediaIndex + 1} must be an MP4 of at least 75 KB.`);
+      if (blob.size > limit) throw new Error(`Media ${mediaIndex + 1} is larger than ${caps[item.kind]} MB.`);
+      let name = String(item.name || `${item.kind}-${mediaIndex + 1}`).replace(/[^A-Za-z0-9._-]+/g, '_').slice(0, 96) || item.kind;
+      if (item.kind === 'video' && !/\.mp4$/i.test(name))
+        name = `${name.replace(/\.[^.]*$/, '').slice(0, 91) || 'video'}.mp4`;
+      const upload = item.kind === 'video' && blob.type !== 'video/mp4' ?
+        new Blob([blob], { type: 'video/mp4' }) : blob;
+      body.append(`media_0_${mediaIndex}`, upload, name);
+    }
+    return { body, totalMedia };
+  }
+
+  async function runLinkedInPublish() {
+    const thread = serializeLinkedInPost(), validation = validateLinkedInPost(thread), blocked = linkedInBlockReason(validation);
+    if (publishing || publishState.locked || blocked) return;
+    const totalMedia = posts[0].media.length;
+    if (!window.confirm(`Publish this post${totalMedia ? ` with ${totalMedia} media item${totalMedia === 1 ? '' : 's'}` : ''} publicly to LinkedIn now?\n\nThis cannot be undone here.`)) return;
+    publishing = true; publishState = { status: 'loading', message: 'Publishing to LinkedIn…' }; renderPreview();
+    let requestSent = false;
+    try {
+      const payload = { thread, validation, requestId: uid(),
+        confirmation: { action: 'publish_to_linkedin', postCount: 1 } };
+      const { body } = await publishBody(payload, window.SOLVEIT_LINKEDIN_PUBLISH_TOKEN,
+        { image: 512, gif: 512, video: 500 });
+      requestSent = true;
+      const response = await fetch(window.SOLVEIT_LINKEDIN_PUBLISH_URL, { method: 'POST', body });
+      const data = await response.json().catch(() => null);
+      if (!response.ok || !data?.success) {
+        const error = new Error(data?.error || `Publishing failed (${response.status}).`); error.data = data; throw error;
+      }
+      publishState = { status: 'success', data, locked: true,
+        message: data.complete === false ? 'Accepted by LinkedIn; processing was not verified.' : 'Published.' };
+    } catch (error) {
+      const data = error.data, partial = !!data?.posts?.length;
+      const unknown = requestSent && (!data || data.resultUnknown);
+      publishState = { status: 'error', data, locked: partial || unknown || data?.safeToRetry === false,
+        message: partial ? 'A post was created before publishing failed. Check LinkedIn before trying again.' :
+          unknown ? 'Result unknown. Check LinkedIn before trying again.' : error.message || 'Publishing failed.' };
+    } finally {
+      publishing = false;
+      if (viewMode === 'preview' && !lifecycle.signal.aborted && isLinkedIn()) renderPreview();
+    }
+  }
+
   async function runPublish() {
     const thread = serializeThread(), validation = validateThread(thread), blocked = liveBlockReason(validation);
     if (publishing || publishState.locked || blocked) return;
@@ -1128,7 +1372,7 @@
     closeMediaLightbox(false);
     areaSizer?.disconnect();
     closeTools();
-    const validation = validateThread(), list = document.createElement('ol');
+    const validation = validateCurrent(), list = document.createElement('ol');
     list.className = 'social-preview-list';
     const content = [];
     if (validation.errors.length || validation.warnings.length) {
@@ -1162,8 +1406,10 @@
       row.append(avatar, article);
       list.append(row);
     });
-    ui.posts.replaceChildren(...content, list, renderPublish(validation));
-    ui.viewStatus.textContent = validation.valid ? 'Thread preview ready.' : 'Thread preview has validation issues.';
+    ui.posts.replaceChildren(...content, list, isLinkedIn() ? renderLinkedInPublish(validation) : renderPublish(validation));
+    ui.viewStatus.textContent = validation.valid ?
+      (isLinkedIn() ? 'Post preview ready.' : 'Thread preview ready.') :
+      (isLinkedIn() ? 'Post preview has validation issues.' : 'Thread preview has validation issues.');
     syncHeader();
   }
 
@@ -1184,7 +1430,7 @@
         preview.value = text;
         preview.placeholder = media.length ? `${media.length} media attachment${media.length === 1 ? '' : 's'}` : 'Write a post…';
         preview.classList.toggle('social-empty', !text && !media.length);
-        const over = countText(text).weightedLength - LIMIT;
+        const over = countCurrentText(text).weightedLength - currentLimit();
         preview.ariaLabel = `Edit post ${index + 1}${over > 0 ? `, ${over} characters over limit` : ''}`;
         return row;
       }
@@ -1192,7 +1438,11 @@
       const emoji = `<div class="social-emoji-panel" data-emoji-panel${emojiOpen ? '' : ' hidden'}><div class="social-emoji-head"><span>Emoji</span><button type="button" class="social-tool" data-close-emoji aria-label="Close emoji picker">×</button></div><div class="social-emoji-body" data-emoji-body></div></div>`;
       const code = codeOpen ? codeComposerMarkup() : '';
       const mediaButtonClass = `social-tool social-media-button${media.length ? ' has-media' : ''}`;
-      row.innerHTML = `${avatar}<div class="social-post-body"><textarea rows="1" cols="32" wrap="soft" class="social-post-editor" aria-label="Post ${index + 1}" aria-keyshortcuts="Shift+Enter" placeholder="Write a post…"></textarea><div data-post-media></div><div class="social-post-toolbar"><span class="social-count" data-post-count></span><div class="social-tools"><button type="button" class="social-tool" data-move="-1" aria-label="Move post ${index + 1} up">${MOVE_UP_ICON}</button><button type="button" class="social-tool" data-move="1" aria-label="Move post ${index + 1} down">${MOVE_DOWN_ICON}</button><button type="button" class="social-tool" data-toggle-emoji aria-label="Add emoji to post ${index + 1}" aria-expanded="${emojiOpen}">${EMOJI_ICON}</button><button type="button" class="social-tool" data-toggle-code aria-label="Create code image for post ${index + 1}" aria-controls="social-code-panel" aria-expanded="${codeOpen}">${CODE_ICON}</button><button type="button" class="${mediaButtonClass}" data-toggle-media aria-label="Add media to post ${index + 1}" aria-expanded="${mediaOpen}">${MEDIA_ICON}${media.length ? `<span class="social-badge">${media.length}</span>` : ''}</button><button type="button" class="social-tool social-add" data-add-post aria-label="Add post after post ${index + 1}" title="Add post (Shift+Enter)">${ADD_ICON}</button><details class="social-menu"><summary aria-label="Post ${index + 1} options">⚙</summary><div class="social-menu-pop"><button type="button" data-remove-post>Delete post</button></div></details></div></div>${picker}${emoji}${code}</div>`;
+      const threadTools = isLinkedIn() ? '' :
+        `<button type="button" class="social-tool" data-move="-1" aria-label="Move post ${index + 1} up">${MOVE_UP_ICON}</button><button type="button" class="social-tool" data-move="1" aria-label="Move post ${index + 1} down">${MOVE_DOWN_ICON}</button>`;
+      const addAndMenu = isLinkedIn() ? '' :
+        `<button type="button" class="social-tool social-add" data-add-post aria-label="Add post after post ${index + 1}" title="Add post (Shift+Enter)">${ADD_ICON}</button><details class="social-menu"><summary aria-label="Post ${index + 1} options">⚙</summary><div class="social-menu-pop"><button type="button" data-remove-post>Delete post</button></div></details>`;
+      row.innerHTML = `${avatar}<div class="social-post-body"><textarea rows="1" cols="32" wrap="soft" class="social-post-editor" aria-label="Post ${index + 1}"${isLinkedIn() ? '' : ' aria-keyshortcuts="Shift+Enter"'} placeholder="Write a post…"></textarea><div data-post-media></div><div class="social-post-toolbar"><span class="social-count" data-post-count></span><div class="social-tools">${threadTools}<button type="button" class="social-tool" data-toggle-emoji aria-label="Add emoji to post ${index + 1}" aria-expanded="${emojiOpen}">${EMOJI_ICON}</button><button type="button" class="social-tool" data-toggle-code aria-label="Create code image for post ${index + 1}" aria-controls="social-code-panel" aria-expanded="${codeOpen}">${CODE_ICON}</button><button type="button" class="${mediaButtonClass}" data-toggle-media aria-label="Add media to post ${index + 1}" aria-expanded="${mediaOpen}">${MEDIA_ICON}${media.length ? `<span class="social-badge">${media.length}</span>` : ''}</button>${addAndMenu}</div></div>${picker}${emoji}${code}</div>`;
       const area = $('textarea', row), moves = $$('[data-move]', row);
       area.value = text;
       moves.forEach((move, i) => {
@@ -1222,16 +1472,30 @@
   function buildPanel() {
     const main = $('main');
     if (!main) throw new Error('Cannot mount social post panel: <main> was not found.');
+    ensureHydrated();
+    const cardTitle = isLinkedIn() ? 'LinkedIn builder' : 'Thread builder';
+    const clearLabel = isLinkedIn() ? 'Clear post' : 'Delete all posts';
+    const previewLabel = 'Preview and post';
+    const previewAria = isLinkedIn() ? 'Preview and post to LinkedIn' : 'Preview and post to X';
+    const previewIcon = isLinkedIn() ? LINKEDIN_ICON : X_ICON;
     panel = document.createElement('div');
     panel.id = PANEL;
     panel.setAttribute('role', 'complementary');
     panel.setAttribute('aria-labelledby', 'social-panel-title');
     panel.innerHTML = `
-      <h2 id="social-panel-title" class="social-title">SolveIt to Social Media</h2>
+      <div class="social-panel-head">
+        <h2 id="social-panel-title" class="social-title">SolveIt to Social Media</h2>
+        <div class="social-platform-control">
+          <span class="social-platform-mark" aria-hidden="true">${isLinkedIn() ? LINKEDIN_ICON : X_ICON}</span>
+          <button type="button" class="social-platform-toggle" data-ui="platformToggle"
+            role="switch" aria-checked="${isLinkedIn()}" aria-label="Switch post mode"
+            uk-tooltip="Switch post mode"><span aria-hidden="true"></span></button>
+        </div>
+      </div>
       <div class="social-card">
         <div class="social-card-head">
-          <h3 class="social-card-title">Thread builder</h3>
-          <div class="social-card-actions"><span class="social-thread-meta" data-ui="threadMeta">1 post</span><button type="button" class="social-tool" data-ui="clearThread" uk-tooltip="Delete all posts" aria-label="Delete all posts"><svg viewBox="0 0 24 24" class="social-icon" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M10 11v6M14 11v6"/></svg></button><button type="button" class="social-view-toggle" data-ui="viewToggle" uk-tooltip="Preview &amp; Post to X" aria-label="Preview and post to X" aria-controls="social-thread-content" aria-pressed="false">${X_ICON}</button></div>
+          <h3 class="social-card-title">${cardTitle}</h3>
+          <div class="social-card-actions"><span class="social-thread-meta" data-ui="threadMeta">1 post</span><button type="button" class="social-tool" data-ui="clearThread" uk-tooltip="${clearLabel}" aria-label="${clearLabel}"><svg viewBox="0 0 24 24" class="social-icon" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M10 11v6M14 11v6"/></svg></button><button type="button" class="social-view-toggle" data-ui="viewToggle" uk-tooltip="${previewLabel}" aria-label="${previewAria}" aria-controls="social-thread-content" aria-pressed="false">${previewIcon}</button></div>
         </div>
         <div id="social-thread-content" data-ui="posts"></div>
         <p class="social-sr-only" data-ui="viewStatus" aria-live="polite"></p>
@@ -1239,6 +1503,11 @@
     main.appendChild(panel);
     ui = Object.fromEntries($$('[data-ui]', panel).map(el => [el.dataset.ui, el]));
     wireMediaLightbox();
+    ui.platformToggle.onclick = () => {
+      const next = isLinkedIn() ? 'x' : 'linkedin';
+      if (activatePlatform(next, false))
+        requestAnimationFrame(() => ui?.platformToggle?.focus({ preventScroll: true }));
+    };
 
     ui.posts.oninput = event => {
       if (event.target.matches('[data-code-input]')) {
@@ -1297,7 +1566,7 @@
         renderPosts(true);
         return;
       }
-      if (event.key !== 'Enter' || event.repeat || event.isComposing || !event.shiftKey ||
+      if (isLinkedIn() || event.key !== 'Enter' || event.repeat || event.isComposing || !event.shiftKey ||
           event.altKey || event.ctrlKey || event.metaKey || event.target.readOnly || !event.target.matches('.social-post-editor')) return;
       event.preventDefault();
       event.stopPropagation();
@@ -1447,7 +1716,9 @@
     };
     ui.clearThread.onclick = () => {
       const count = posts.length;
-      if (!window.confirm(`Delete all ${count} post${count === 1 ? '' : 's'}? This cannot be undone.`)) return;
+      const message = isLinkedIn() ? 'Clear this LinkedIn post? This cannot be undone.' :
+        `Delete all ${count} post${count === 1 ? '' : 's'}? This cannot be undone.`;
+      if (!window.confirm(message)) return;
       posts = [newPost()];
       activePost = 0;
       closeTools();
@@ -1465,27 +1736,46 @@
       if (viewMode === 'preview') panel.scrollTop = 0;
       ui.viewToggle.focus({ preventScroll: true });
     };
-    restoreDraft();
-    hydrated = true;
-    addEventListener('pagehide', writeDraft, { signal: lifecycle.signal });
-    lifecycle.signal.addEventListener('abort', writeDraft, { once: true });
-    renderPosts();
+    if (!storageListeners) {
+      storageListeners = true;
+      addEventListener('pagehide', writeDraft, { signal: lifecycle.signal });
+      lifecycle.signal.addEventListener('abort', writeDraft, { once: true });
+    }
+    viewMode === 'preview' ? renderPreview() : renderPosts();
     loadCounter();
     return panel;
   }
 
+  function activatePlatform(next, toggle = true) {
+    if (publishing && platform !== next) return false;
+    if (platform !== next) {
+      clearTimeout(saveTimer);
+      if (hydrated) writeDraft();
+      stashPlatform();
+      areaSizer?.disconnect();
+      panel?.remove();
+      panel = ui = areaSizer = null;
+      closeTools();
+      loadPlatform(next);
+      try { localStorage.setItem(PLATFORM_STORAGE_KEY, next); } catch (_) {}
+    } else if (panel && toggle) {
+      panel.hidden = !panel.hidden;
+      document.getElementById(BUTTON)?.setAttribute('aria-expanded', String(!panel.hidden));
+      return true;
+    }
+    if (!panel) panel = buildPanel();
+    panel.hidden = false;
+    document.getElementById(BUTTON)?.setAttribute('aria-expanded', 'true');
+    return true;
+  }
+
   function installLauncher() {
-      const toolbar = document.getElementById('terminal')?.parentElement;
-      if (!toolbar) return false;
+    if (document.getElementById(BUTTON)) return true;
+    const toolbar = document.getElementById('terminal')?.parentElement;
+    if (!toolbar) return false;
     toolbar.insertAdjacentHTML('afterbegin',
       `<button id="${BUTTON}" type="button" class="uk-btn uk-btn-icon uk-btn-sm text-lg uk-btn-default cursor-pointer" uk-tooltip="Open social post sidepanel" aria-label="Open social post sidepanel" aria-controls="${PANEL}" aria-expanded="false"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" height="16px" width="16px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon" aria-hidden="true"><path d="M11 6a13 13 0 0 0 8.4-2.8A1 1 0 0 1 21 4v12a1 1 0 0 1-1.6.8A13 13 0 0 0 11 14H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z"/><path d="M6 14a12 12 0 0 0 2.4 7.2 2 2 0 0 0 3.2-2.4A8 8 0 0 1 10 14"/><path d="M8 6v8"/></svg></button>`);
-    const button = document.getElementById(BUTTON);
-    button.onclick = event => {
-      event.stopPropagation();
-      if (!panel) panel = buildPanel();
-      else panel.hidden = !panel.hidden;
-      button.setAttribute('aria-expanded', String(!panel.hidden));
-    };
+    document.getElementById(BUTTON).onclick = event => { event.stopPropagation(); activatePlatform(platform); };
     return true;
   }
 
@@ -1498,21 +1788,32 @@
     lifecycle.signal.addEventListener('abort', () => observer.disconnect(), { once: true });
   }
 
-  function showPanel() {
-    if (!panel) panel = buildPanel();
-    panel.hidden = false;
-    document.getElementById(BUTTON)?.setAttribute('aria-expanded', 'true');
+  function showPanel(next = 'x') {
+    return activatePlatform(next, false);
   }
 
-  const publicApi = { serializeThread, validateThread, countText, saveDraft: writeDraft,
-    preview: () => { showPanel(); viewMode = 'preview'; renderPreview(); panel.scrollTop = 0; },
-    publish: async () => { showPanel(); viewMode = 'preview'; renderPreview(); return runPublish(); } };
+  const publicApi = {
+    serializeThread: options => withPlatform('x', () => serializeThread(options)),
+    validateThread: payload => withPlatform('x', () => validateThread(payload)),
+    countText,
+    saveDraft: () => savePlatformDraft('x'),
+    preview: () => { if (!showPanel('x')) return; viewMode = 'preview'; renderPreview(); panel.scrollTop = 0; },
+    publish: async () => { if (!showPanel('x')) return; viewMode = 'preview'; renderPreview(); return runPublish(); },
+    linkedin: {
+      serializePost: options => withPlatform('linkedin', () => serializeLinkedInPost(options)),
+      validatePost: payload => withPlatform('linkedin', () => validateLinkedInPost(payload)),
+      preview: () => { if (!showPanel('linkedin')) return; viewMode = 'preview'; renderPreview(); panel.scrollTop = 0; },
+      publish: async () => { if (!showPanel('linkedin')) return; viewMode = 'preview'; renderPreview(); return runLinkedInPublish(); }
+    } };
   window.solveitSocial = publicApi;
   lifecycle.signal.addEventListener('abort', () => {
     if (window.solveitSocial === publicApi) delete window.solveitSocial;
   }, { once: true });
 
-  const refresh = () => { if (panel && !panel.hidden && mediaOpen && mediaTab === 'dialog') requestAnimationFrame(renderMediaPicker); };
+  const refresh = () => {
+    installLauncher();
+    if (panel && !panel.hidden && mediaOpen && mediaTab === 'dialog') requestAnimationFrame(renderMediaPicker);
+  };
   for (const eventName of ['htmx:afterSettle', 'htmx:wsAfterMessage'])
     document.addEventListener(eventName, refresh, { signal: lifecycle.signal });
 })();

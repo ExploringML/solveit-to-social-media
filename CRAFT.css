@@ -29,15 +29,32 @@ main:has(> #dialog-attachment-panel:not([hidden])) > #chat-box { min-height: 0 !
 }
 #dialog-attachment-panel[hidden], #dialog-attachment-panel [hidden] { display: none !important; }
 #dialog-attachment-panel button, #dialog-attachment-panel textarea { font: inherit; }
-#dialog-attachment-panel .social-title { margin: 0; font-size: 1.25rem; line-height: 1.75rem; font-weight: 600; letter-spacing: -.025em; }
+#dialog-attachment-panel .social-panel-head { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
+#dialog-attachment-panel .social-title { min-width: 0; margin: 0; font-size: 1.25rem; line-height: 1.75rem; font-weight: 600; letter-spacing: -.025em; }
+#dialog-attachment-panel .social-platform-control { display: inline-flex; flex: 0 0 auto; align-items: center; gap: .375rem; }
+#dialog-attachment-panel .social-platform-mark { display: inline-flex; width: 1rem; height: 1rem; align-items: center; justify-content: center; color: #0f172a; }
+#dialog-attachment-panel .social-platform-mark .social-x-icon { width: .75rem; height: .75rem; }
+#dialog-attachment-panel .social-platform-mark .social-linkedin-icon { width: 1rem; height: 1rem; border-radius: .125rem; }
+#dialog-attachment-panel .social-platform-toggle { position: relative; display: inline-flex; width: 2rem; height: 1.125rem; flex: 0 0 auto; align-items: center; padding: .125rem; border: 0; border-radius: 999px; background: #cbd5e1; cursor: pointer; transition: background-color .15s ease; }
+#dialog-attachment-panel .social-platform-toggle > span { display: block; width: .875rem; height: .875rem; border-radius: 999px; background: white; box-shadow: 0 1px 2px rgb(15 23 42 / .25); transform: translateX(0); transition: transform .15s ease; }
+#dialog-attachment-panel .social-platform-toggle[aria-checked="true"] { background: #0a66c2; }
+#dialog-attachment-panel .social-platform-toggle[aria-checked="true"] > span { transform: translateX(.875rem); }
+#dialog-attachment-panel .social-platform-toggle:hover { background: #94a3b8; }
+#dialog-attachment-panel .social-platform-toggle[aria-checked="true"]:hover { background: #095aa9; }
+#dialog-attachment-panel .social-platform-toggle:disabled { cursor: wait; opacity: .45; }
+#dialog-attachment-panel .social-platform-toggle:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
 #dialog-attachment-panel .social-card { width: 100%; min-width: 0; max-width: 100%; margin-top: 1rem; padding: .75rem; border: 1px solid #e2e8f0; border-radius: .75rem; background: white; box-shadow: 0 1px 2px rgb(15 23 42 / .08); }
-#dialog-attachment-panel .social-card-head { display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: .5rem; padding-bottom: .3125rem; }
+#dialog-attachment-panel .social-card-head { display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: .5rem; padding-bottom: .625rem; }
 #dialog-attachment-panel .social-card-title { flex: 0 0 auto; margin: 0; white-space: nowrap; font-size: 1.125rem; line-height: 1.75rem; font-weight: 600; }
 #dialog-attachment-panel .social-thread-meta { flex: 0 0 auto; white-space: nowrap; color: #64748b; font-size: .75rem; }
 #dialog-attachment-panel .social-card-actions { display: flex; min-width: 0; align-items: center; justify-content: flex-end; gap: .375rem; }
-#dialog-attachment-panel .social-view-toggle { display: inline-flex; min-width: 2rem; height: 1.5rem; align-items: center; justify-content: center; padding: .1875rem .5rem; border: 1px solid #cbd5e1; border-radius: 999px; background: white; color: #334155; font-size: .6875rem; line-height: 1rem; }
-#dialog-attachment-panel .social-view-toggle:hover { background: #f8fafc; }
-#dialog-attachment-panel .social-x-icon { display: block; width: auto; height: .78rem; flex: none; }
+#dialog-attachment-panel .social-view-toggle { display: inline-flex; height: 1.5rem; align-items: center; justify-content: center; margin: 0; padding: 0; border: 0; background: transparent; color: #334155; font-size: .6875rem; line-height: 1rem; }
+#dialog-attachment-panel .social-view-toggle:hover { color: #0f172a; }
+#dialog-attachment-panel .social-view-toggle.is-edit { min-width: 2rem; padding: .1875rem .5rem; border: 1px solid #cbd5e1; border-radius: 999px; background: white; }
+#dialog-attachment-panel .social-view-toggle.is-edit:hover { background: #f8fafc; }
+#dialog-attachment-panel .social-view-toggle .social-x-icon { height: 1rem; }
+#dialog-attachment-panel .social-view-toggle .social-linkedin-icon { height: 1.125rem; }
+#dialog-attachment-panel .social-x-icon, #dialog-attachment-panel .social-linkedin-icon { display: block; width: auto; height: .78rem; flex: none; }
 /* ===== CSS 2.0 — Thread rows and post editor ===== */
 #dialog-attachment-panel .social-post { display: flex !important; align-items: flex-start; width: 100% !important; min-width: 0 !important; max-width: 100% !important; gap: .5rem; padding: .125rem 0; }
 #dialog-attachment-panel .social-post-body { display: flex !important; flex: 1 1 0% !important; min-width: 0 !important; max-width: 100% !important; flex-direction: column !important; gap: .375rem; }
@@ -180,6 +197,7 @@ main:has(> #dialog-attachment-panel:not([hidden])) > #chat-box { min-height: 0 !
 #dialog-attachment-panel .social-publish-button { display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center; gap: .3rem; padding: .25rem .625rem; border: 1px solid #0f172a; border-radius: 999px; background: #0f172a; color: white; font-size: .75rem; font-weight: 600; }
 #dialog-attachment-panel .social-publish-button:hover:not(:disabled) { background: #334155; }
 #dialog-attachment-panel .social-publish-button:disabled { cursor: default; opacity: .4; }
+#dialog-attachment-panel .social-publish-button .social-linkedin-icon { height: 1rem; }
 #dialog-attachment-panel .social-publish-status { min-width: 0; margin: 0; color: #64748b; font-size: .6875rem; line-height: 1rem; }
 #dialog-attachment-panel .social-publish-status.is-error { color: #b91c1c; }
 #dialog-attachment-panel .social-publish-link { color: #2563eb; white-space: nowrap; }
