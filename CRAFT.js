@@ -18,6 +18,7 @@
   const MOVE_UP_ICON = '<svg viewBox="0 0 20 20" class="social-move-icon" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 16V4M5.5 8.5 10 4l4.5 4.5"/></svg>';
   const MOVE_DOWN_ICON = '<svg viewBox="0 0 20 20" class="social-move-icon" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 4v12m-4.5-4.5L10 16l4.5-4.5"/></svg>';
   const ADD_ICON = '<svg viewBox="0 0 16 16" class="social-add-icon" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M8 4v8M4 8h8"/></svg>';
+  const COPY_ICON = '<svg viewBox="0 0 24 24" class="social-icon" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M15 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h3"/></svg>';
   const X_ICON = '<svg class="social-x-icon" viewBox="0 0 1200 1227" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><path fill="currentColor" d="M714.163 519.284L1160.89 0H1055.03L667.137 450.887L357.328 0H0L468.492 681.821L0 1226.37H105.866L515.491 750.218L842.672 1226.37H1200L714.137 519.284H714.163ZM569.165 687.828L521.697 619.934L144.011 79.6944H306.615L611.412 515.685L658.88 583.579L1055.08 1150.3H892.476L569.165 687.854V687.828Z"/></svg>';
   const LINKEDIN_ICON = '<svg class="social-linkedin-icon" width="16" height="16" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><rect width="24" height="24" rx="2.5" fill="#0A66C2"/><path fill="#fff" d="M20.45 20.45h-3.56v-5.57c0-1.33-.03-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.34V8.98h3.42v1.57h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.29ZM5.32 7.41a2.06 2.06 0 1 1 0-4.12 2.06 2.06 0 0 1 0 4.12Zm1.78 13.04H3.54V8.98H7.1v11.47Z"/></svg>';
   const PLAY_ICON = '<svg viewBox="0 0 24 24" class="social-icon" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="#0f172a" fill-opacity=".72" stroke="white"/><path d="m10 8.5 5.5 3.5-5.5 3.5Z" fill="white"/></svg>';
@@ -1120,12 +1121,49 @@
     renderPosts(true);
   }
 
+  const hasPostContent = () => posts.some(post => post.text.trim() || post.media.length);
+  function syncCopyThread() {
+    if (ui?.copyThread) ui.copyThread.disabled = publishing || !hasPostContent();
+  }
+
+  function copyThreadToLinkedIn() {
+    if (isLinkedIn() || !hasPostContent()) return;
+    const text = posts.map(post => post.text.trim()).filter(Boolean).join('\n\n');
+    const seen = new Set(), media = posts.flatMap(post => post.media).filter(item => {
+      const key = item.ref || item.id;
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+    const visualMedia = media.filter(item => item.kind !== 'video');
+    const copiedMedia = (visualMedia.length ? visualMedia.slice(0, 4) :
+      media.filter(item => item.kind === 'video').slice(0, 1)).map(item => ({ ...item }));
+
+    let hasLinkedInContent = false;
+    withPlatform('linkedin', () => {
+      hasLinkedInContent = posts.some(post => post.text.trim() || post.media.length);
+    });
+    if (hasLinkedInContent && !window.confirm('Replace the existing LinkedIn post with this X thread? This cannot be undone.')) return;
+
+    withPlatform('linkedin', () => {
+      posts = [{ clientId: posts[0]?.clientId || uid(), text, media: copiedMedia }];
+      activePost = 0;
+      viewMode = 'edit';
+      resetPublish();
+      hydrated = true;
+      writeDraft();
+    });
+    if (activatePlatform('linkedin', false))
+      requestAnimationFrame(() => $('.social-post-editor', ui?.posts)?.focus({ preventScroll: true }));
+  }
+
   function syncHeader() {
     const preview = viewMode === 'preview';
     ui.platformToggle.setAttribute('aria-busy', String(publishing));
     ui.platformToggle.disabled = publishing;
     ui.platformToggle.setAttribute('aria-disabled', String(publishing));
     ui.viewToggle.classList.toggle('is-edit', preview);
+    syncCopyThread();
     if (isLinkedIn()) {
       ui.threadMeta.textContent = '1 post';
       ui.viewToggle.innerHTML = preview ? 'Edit' : LINKEDIN_ICON;
@@ -1478,6 +1516,8 @@
     const previewLabel = 'Preview and post';
     const previewAria = isLinkedIn() ? 'Preview and post to LinkedIn' : 'Preview and post to X';
     const previewIcon = isLinkedIn() ? LINKEDIN_ICON : X_ICON;
+    const copyAction = isLinkedIn() ? '' :
+      `<button type="button" class="social-tool" data-ui="copyThread" uk-tooltip="Copy thread to LinkedIn" aria-label="Copy thread to LinkedIn">${COPY_ICON}</button>`;
     panel = document.createElement('div');
     panel.id = PANEL;
     panel.setAttribute('role', 'complementary');
@@ -1495,7 +1535,7 @@
       <div class="social-card">
         <div class="social-card-head">
           <h3 class="social-card-title">${cardTitle}</h3>
-          <div class="social-card-actions"><span class="social-thread-meta" data-ui="threadMeta">1 post</span><button type="button" class="social-tool" data-ui="clearThread" uk-tooltip="${clearLabel}" aria-label="${clearLabel}"><svg viewBox="0 0 24 24" class="social-icon" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M10 11v6M14 11v6"/></svg></button><button type="button" class="social-view-toggle" data-ui="viewToggle" uk-tooltip="${previewLabel}" aria-label="${previewAria}" aria-controls="social-thread-content" aria-pressed="false">${previewIcon}</button></div>
+          <div class="social-card-actions"><span class="social-thread-meta" data-ui="threadMeta">1 post</span>${copyAction}<button type="button" class="social-tool" data-ui="clearThread" uk-tooltip="${clearLabel}" aria-label="${clearLabel}"><svg viewBox="0 0 24 24" class="social-icon" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M10 11v6M14 11v6"/></svg></button><button type="button" class="social-view-toggle" data-ui="viewToggle" uk-tooltip="${previewLabel}" aria-label="${previewAria}" aria-controls="social-thread-content" aria-pressed="false">${previewIcon}</button></div>
         </div>
         <div id="social-thread-content" data-ui="posts"></div>
         <p class="social-sr-only" data-ui="viewStatus" aria-live="polite"></p>
@@ -1508,6 +1548,7 @@
       if (activatePlatform(next, false))
         requestAnimationFrame(() => ui?.platformToggle?.focus({ preventScroll: true }));
     };
+    if (ui.copyThread) ui.copyThread.onclick = copyThreadToLinkedIn;
 
     ui.posts.oninput = event => {
       if (event.target.matches('[data-code-input]')) {
@@ -1523,6 +1564,7 @@
       emojiSelection = [event.target.selectionStart, event.target.selectionEnd];
       fitPostArea(event.target);
       updatePost(card, event.target.value);
+      syncCopyThread();
       queueSave();
     };
     ui.posts.onchange = event => {
